@@ -198,7 +198,7 @@ function upcomingGamesTableData(data) {
     awayTeamCell.textContent = match.away_team;
 
     const startTimeCell = row.insertCell();
-    startTimeCell.textContent = match.commence_time;
+    startTimeCell.textContent =  formatMatchCommenceTime(match.commence_time);
     }
 
   });

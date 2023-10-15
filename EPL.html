@@ -122,7 +122,7 @@ firebase.initializeApp(firebaseConfig);
 // Firebase database reference
 const database = firebase.database();
 
-// DOM element references
+// Defining variables from HTML components to be used later on in code. 
 const leagueText = document.querySelector('.leagueText');
 const upcomingGamesTable = document.querySelector('.upcomingGamesTable');
 const upcomingGamesButton = document.getElementById('upcomingGames');
@@ -144,6 +144,8 @@ liveGamesTableMsg.style.display = 'none';
 
 // Function to fetch data from a remote API
 async function fetchData() {
+
+  // Configuration for making the 'GET' request from the API source
   const options = {
     method: 'GET',
     url: 'https://odds.p.rapidapi.com/v4/sports/soccer_epl/scores',
@@ -155,8 +157,10 @@ async function fetchData() {
   };
 
   try {
+    // Sending the request, and awaiting the response from the API source.
     const response = await axios.request(options);
     console.log(response.data);
+    // Process th data for both tables by providing the response. 
     upcomingGamesTableData(response.data);
     liveGamesTableData(response.data);
   } catch (error) {
@@ -166,6 +170,7 @@ async function fetchData() {
 
 const apiKey = 'cc25be1117msh130677156d9f847p1c8dfcjsna2bde567f246';
 
+// Configuration for making the 'GET' request from the API source for fetch method.
 const requestOptions = {
   method: 'GET',
   params: { daysFrom: '3' },
@@ -176,45 +181,64 @@ const requestOptions = {
   },
 };
 
-// Function to populate the upcoming games table
+// Function to complete the upcoming games table
 function upcomingGamesTableData(data) {
   const upcomingGamesTableData = document.querySelector('.upcomingGamesTable');
 
+  // Removing existing rows with no match data in it, except the header. 
   while (upcomingGamesTableData.rows.length > 1) {
     upcomingGamesTableData.deleteRow(1);
   }
 
+  // Iterate existing rows from the table (exlcuding the header)
   data.forEach((match) => {
+    // Check if match is not yet completed. 
     if(match.completed === false) {
+    // Create new row for the upcoming game. 
     const row = upcomingGamesTableData.insertRow();
 
+    // Create new row for the home team. 
     const homeTeamCell = row.insertCell();
+    // The new cell is filled with the API match data of the home team name. 
     homeTeamCell.textContent = match.home_team;
 
+    // Create new cell for 'vs' 
     const VSCell = row.insertCell();
+    // The new cell is just text - 'vs'
     VSCell.textContent = "vs";
 
+    // Creates new cell for away team.
     const awayTeamCell = row.insertCell();
+    // The new cell is filled with the API match data of the away team. 
     awayTeamCell.textContent = match.away_team;
 
+    // Creates new cell for commencement time. 
     const startTimeCell = row.insertCell();
-    startTimeCell.textContent = match.commence_time;
+    // Set the text content of the cell to the formatted commencement time.
+    // by called the formatMatchCommenceTime function with the match commence time as an argument. 
+    startTimeCell.textContent = formatMatchCommenceTime(match.commence_time);
     }
 
   });
 }
 
 
-
+// isoDate used to convert time for usability
+// Time zone to consider for the time conversion
 function formatMatchCommenceTime(isoDate, timeZone) {
+  // Create a Date object from the provdided ISO date
   const matchDate = new Date(isoDate);
+  //Defining options for the formatted time.
   const options = {weekday: 'short', hour: 'numeric',  minute: 'numeric', hour12: 'true', timeZone};
+  // Convert the date to a formatted time string
   const formattedTime = matchDate.toLocaleDateString(undefined, options);
+  // return the time for user-friendly reading. 
   return formattedTime
 }
 
 
 // Event listener for the "Upcoming Games" button
+// Displays for components when button is clicked. 
 document.getElementById("upcomingGames").addEventListener("click", function () {
   leagueText.style.display = 'none';
   pastGamesTable.style.display = 'none';
@@ -224,12 +248,16 @@ document.getElementById("upcomingGames").addEventListener("click", function () {
 });
 
 function liveGamesTableData(data) {
-
+// Creates loop for weach match in the dataset.
 data.forEach((match) => {
+  // Check if the match is completed. 
   if (match.completed === true) {
+    // Reference to realtime database
     const matches = database.ref('2023EPL');
+    // Checking the database to see if the match already exists. 
     matches.orderByChild("homeTeam").equalTo(match.home_team)
       .once("value", snapshot => {
+        // If the match does not exist in the database, then it can be saved to database.
         if (!snapshot.exists()) {
           matches.push().set({
             homeTeam: match.home_team,
@@ -238,7 +266,9 @@ data.forEach((match) => {
             awayTeamScore: match.scores[1].score,
           });
           console.log('Data Saved');
-        } else {
+        } 
+        // If the database exists, log a message saying it already exists. 
+        else {
           console.log('Data Exists');
         }
       });
@@ -249,12 +279,16 @@ data.forEach((match) => {
 
 liveGamesButton.onclick = function () {
 console.log('Live Games Button Clicked');
+
+// Hide the other tables, and the league text.
 upcomingGamesTable.style.display = 'none';
 leagueText.style.display = 'none';
 pastGamesTable.style.display = 'none';
 
+// Clear the content of the live games table. 
 liveGamesTable.innerHTML = '';
 
+// Fetch the live data from API. 
 fetch('https://odds.p.rapidapi.com/v4/sports/soccer_epl/scores', requestOptions)
   .then(response => {
     return response.json();
@@ -262,18 +296,24 @@ fetch('https://odds.p.rapidapi.com/v4/sports/soccer_epl/scores', requestOptions)
   .then(data => {
     console.log('Received data:', data);
     let liveGame = false;
+
+    // Loop through the fetched data to check for live matches
     data.forEach(match => {
       console.log('Checking match:', match);
+
+      // Check if the match has scores for both teams, and game is not completed. 
       if (Array.isArray(match.scores) && match.scores.length === 2  && match.completed === false) {
         console.log('Live game found:', match);
+
+        // Display the live games table and hide the live games table message. 
         liveGamesTable.style.display = 'block';
         liveGamesTableMsg.style.display = 'none';
         liveGame = true;
 
-
-        
+        // Create a new row in the live games table 
         const row = liveGamesTable.insertRow();
 
+        // Creating new cells for home team, away team, and live score. 
         const homeTeamCell = row.insertCell();
         homeTeamCell.textContent = match.home_team;
 
@@ -289,6 +329,7 @@ fetch('https://odds.p.rapidapi.com/v4/sports/soccer_epl/scores', requestOptions)
         }
         console.log('Row added to liveGamesTable:', row);
       } 
+      // Handle the display based on live game status. 
       if (liveGame) {
         liveGamesTable.style.display = 'block';
         liveGamesTableMsg.style.display = 'none';
@@ -303,27 +344,39 @@ fetch('https://odds.p.rapidapi.com/v4/sports/soccer_epl/scores', requestOptions)
   .catch(error => console.log(error));
 };
 
-
+// Reference the firebase database 
 const matches = database.ref('2023EPL');
 
 
 // Function to complete the past games table
 function completePastGamesTable(data) {
+  // Clear the content of the table.
   pastGamesTable.innerHTML = '';
 
+  // Iterate through the provided data to display past game information. 
   for (const key in data) {
     if (data.hasOwnProperty(key)) {
       const match = data[key];
       const row = pastGamesTable.insertRow();
+
+      // Cell for displaying the home team name. 
       const homeTeamCell = row.insertCell();
       homeTeamCell.textContent = match.homeTeam;
+
+      // Cell to display "vs"
       const vsCell = row.insertCell();
       vsCell.textContent = 'vs';
+
+      // Cell for displaying the away team.
       const awayTeamCell = row.insertCell();
       awayTeamCell.textContent = match.awayTeam;
+
+      // Cell for displaying final scores. 
       const scoreCell = row.insertCell();
 
+      // Check that final scores are availiable for the match 
       if (match.homeTeamScore !== undefined && match.awayTeamScore !== undefined) {
+        // Display final score
         scoreCell.textContent = match.homeTeamScore + " - " + match.awayTeamScore;
       }
     }
@@ -332,19 +385,25 @@ function completePastGamesTable(data) {
 
 // Event listener for the "Past Games" button
 pastGamesButton.onclick = function () {
+  // Hiding all other tables.
   upcomingGamesTable.style.display = 'none';
   leagueText.style.display = 'none';
   liveGamesTable.style.display = 'none';
   liveGamesTableMsg.style.display = 'none';
+
+  // Displaying the past game table. 
   pastGamesTable.style.display = 'block';
 
+  // Get the past game data from realtime database and complete past game table.
   matches.orderByChild("homeTeam").once('value')
     .then(snapshot => {
       const pastGamesData = snapshot.val();
       if (pastGamesData) {
+        // If the data of a game exists, it adds it to the table 
         completePastGamesTable(pastGamesData);
         pastGamesTable.style.display = 'block';
       } else {
+        // If no past game data exists, the table is hidden, 
         pastGamesTable.style.display = 'none';
       }
     })
