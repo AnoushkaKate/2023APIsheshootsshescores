@@ -204,6 +204,15 @@ function upcomingGamesTableData(data) {
   });
 }
 
+
+function formatMatchCommenceTime(isoDate, timeZone) {
+  const matchDate = new Date(isoDate);
+  const options = {weekday: 'short', hour: 'numeric',  minute: 'numeric', hour12: 'true', timeZone};
+  const formattedTime = matchDate.toLocaleDateString(undefined, options);
+  return formattedTime
+}
+
+
 // Event listener for the "Upcoming Games" button
 document.getElementById("upcomingGames").addEventListener("click", function () {
   leagueText.style.display = 'none';
